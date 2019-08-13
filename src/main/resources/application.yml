@@ -1,0 +1,32 @@
+batch:
+  job:
+    cron:  0 0/5 * * * *
+    remote-partition-enabled: true
+    async-processor-enabled: false
+    multi-thread-enabled: false
+    parallel-enabled: false
+
+spring:
+  batch:
+    job:
+      enabled: false
+
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:transactiondb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    platform: h2
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+
+server:
+  port: ${PORT:9091}
