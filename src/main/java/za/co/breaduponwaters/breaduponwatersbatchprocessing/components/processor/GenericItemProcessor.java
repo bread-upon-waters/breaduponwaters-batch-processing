@@ -3,8 +3,7 @@ package za.co.breaduponwaters.breaduponwatersbatchprocessing.components.processo
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
-import za.co.breaduponwaters.breaduponwatersbatchprocessing.models.AbstractEntity;
-import za.co.breaduponwaters.breaduponwatersbatchprocessing.models.Transaction;
+import za.co.breaduponwaters.breaduponwatersbatchprocessing.entity.domain.Transaction;
 
 @Slf4j
 @Component

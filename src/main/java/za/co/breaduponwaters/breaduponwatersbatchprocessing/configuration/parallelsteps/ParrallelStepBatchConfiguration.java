@@ -1,7 +1,6 @@
 package za.co.breaduponwaters.breaduponwatersbatchprocessing.configuration.parallelsteps;
 
 import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.converters.basic.DateConverter;
 import com.thoughtworks.xstream.security.NoTypePermission;
 import lombok.AllArgsConstructor;
 import org.springframework.batch.core.*;
@@ -11,6 +10,7 @@ import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.FlowBuilder;
 import org.springframework.batch.core.job.flow.Flow;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
 import org.springframework.batch.core.repository.JobRestartException;
@@ -21,24 +21,20 @@ import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.xml.StaxEventItemReader;
 import org.springframework.batch.item.xml.builder.StaxEventItemReaderBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
-import org.springframework.oxm.jaxb.Jaxb2Marshaller;
 import org.springframework.oxm.xstream.XStreamMarshaller;
 import org.springframework.scheduling.annotation.Scheduled;
 import za.co.breaduponwaters.breaduponwatersbatchprocessing.configuration.ApplicationConfig;
-import za.co.breaduponwaters.breaduponwatersbatchprocessing.configuration.multithreadingstep.EnhanceItemProcessor;
-import za.co.breaduponwaters.breaduponwatersbatchprocessing.models.Transaction;
+import za.co.breaduponwaters.breaduponwatersbatchprocessing.configuration.multithreadedstep.TransactionItemProcessor;
+import za.co.breaduponwaters.breaduponwatersbatchprocessing.entity.domain.Transaction;
 import za.co.breaduponwaters.breaduponwatersbatchprocessing.utils.DateConverterAdapter;
 
 import javax.sql.DataSource;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -64,8 +60,34 @@ public class ParrallelStepBatchConfiguration {
             jobLauncher.run(parallelStepJob(null), jobParameters);
         }
     }
-    
+
     //
+    @Bean
+    public Job parallelStepJob(JobBuilderFactory masterJobBuilderFactory){
+        return jobBuilderFactory.get("parallelStepJob")
+                .incrementer(new RunIdIncrementer())
+                .start(splitFlow())
+                //.next(parrallelStepStep4())
+                .end()
+                .build();
+    }
+
+    @Bean
+    public Flow splitFlow(){
+        Flow flow1 = new FlowBuilder<Flow>("flow2")
+                .start(parrallelStepStep1())
+                .build();
+        Flow flow2 = new FlowBuilder<Flow>("flow2")
+                .start(parrallelStepStep2())
+                //.next(parrallelStepStep3())
+                .build();
+
+        return  new FlowBuilder<Flow>("splitFlow")
+                .split(new SimpleAsyncTaskExecutor("Spring_batch-"))
+                .add(flow1, flow2)
+                .build();
+    }
+
     @Bean
     public Step parrallelStepStep1(){
         return stepBuilderFactory.get("parallelStep1")
@@ -90,7 +112,7 @@ public class ParrallelStepBatchConfiguration {
 
     @StepScope
     @Bean
-    public JdbcBatchItemWriter<? super Transaction> parrallelStepWriter(DataSource dataSource) {
+    public JdbcBatchItemWriter<? super Transaction> parrallelStepWriter(@Qualifier("domainDataSource") DataSource dataSource) {
         return new JdbcBatchItemWriterBuilder<Transaction>()
                 .dataSource(dataSource)
                 .beanMapped()
@@ -101,7 +123,7 @@ public class ParrallelStepBatchConfiguration {
     @StepScope
     @Bean
     public ItemProcessor<? super Transaction,? extends Transaction> parallelStepProcessor() {
-        return new EnhanceItemProcessor();
+        return new TransactionItemProcessor();
     }
 
     @StepScope
@@ -151,22 +173,6 @@ public class ParrallelStepBatchConfiguration {
                 super.customizeXStream(xstream);
             }
         };
-    }
-
-    @Bean
-    public Job parallelStepJob(JobBuilderFactory masterJobBuilderFactory){
-        Flow parrallelFlow = new FlowBuilder<Flow>("parrallelFlow")
-                .start(parrallelStepStep1())
-                .split(new SimpleAsyncTaskExecutor())
-                .add(new FlowBuilder<Flow>("parallelFlow2")
-                        .start(parrallelStepStep2())
-                        .build())
-                .build();
-
-        return jobBuilderFactory.get("parallelStepJob")
-                .start(parrallelFlow)
-                .end()
-                .build();
     }
     //
 }

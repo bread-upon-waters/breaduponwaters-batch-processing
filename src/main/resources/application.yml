@@ -1,22 +1,29 @@
 batch:
   job:
     cron:  0 0/5 * * * *
-    remote-partition-enabled: true
+    remote-partition-enabled: false
     async-processor-enabled: false
     multi-thread-enabled: false
     parallel-enabled: false
 
 spring:
+  domain:
+    datasource:
+      driver-class-name: org.h2.Driver
+      jdbc-url: jdbc:h2:mem:transactiondb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=TRUE
+      username: sa
+      password:
   batch:
+    datasource:
+      driver-class-name: org.h2.Driver
+      jdbc-url: jdbc:h2:mem:batchdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=TRUE
+      username: sa
+      password:
+    platform: h2
+
+    # Disable Batch Job Auto run (Spring Batch Job By default(
     job:
       enabled: false
-
-  datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:transactiondb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    username: sa
-    password:
-    platform: h2
 
   h2:
     console:

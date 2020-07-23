@@ -5,15 +5,13 @@ import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.integration.partition.RemotePartitioningMasterStepBuilderFactory;
 import org.springframework.batch.integration.partition.RemotePartitioningWorkerStepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,33 +22,28 @@ import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.integration.dsl.MessageChannels;
 import org.springframework.messaging.MessageChannel;
-import za.co.breaduponwaters.breaduponwatersbatchprocessing.configuration.multithreadingstep.EnhanceItemProcessor;
-import za.co.breaduponwaters.breaduponwatersbatchprocessing.models.AbstractEntity;
-import za.co.breaduponwaters.breaduponwatersbatchprocessing.models.Transaction;
+import za.co.breaduponwaters.breaduponwatersbatchprocessing.configuration.multithreadedstep.TransactionItemProcessor;
+import za.co.breaduponwaters.breaduponwatersbatchprocessing.entity.domain.Transaction;
 
 import javax.sql.DataSource;
 
 @AllArgsConstructor
 @Profile(value = "!master")
 @Configuration
-public class WorkerBatchConfiguration {
+public class RemotePartitioningWorkerBatchConfiguration {
 
     private final RemotePartitioningWorkerStepBuilderFactory workerStepBuilderFactory;
 
-    @StepScope
     @Bean
-    public JdbcBatchItemWriter<Transaction> workerWriter(DataSource dataSource) {
-        return new JdbcBatchItemWriterBuilder<Transaction>()
-                .dataSource(dataSource)
-                .beanMapped()
-                .sql("INSERT INTO TRANSACTION (ACCOUNT, AMOUNT, TIMESTAMP) VALUES (:account, :amount, :timestamp)")
+    public Step workerStep() {
+        return workerStepBuilderFactory.get("workerStep")
+                .outputChannel(replies())
+                .inputChannel(requests())
+                .<Transaction, Transaction>chunk(100)
+                .reader(workerReaderCSV(null))
+                .processor(workerProcessor())
+                .writer(workerWriter(null))
                 .build();
-    }
-
-    @StepScope
-    @Bean
-    public ItemProcessor<Transaction, Transaction> workerProcessor() {
-        return new EnhanceItemProcessor();
     }
 
     @StepScope
@@ -71,6 +64,21 @@ public class WorkerBatchConfiguration {
                 .build();
     }
 
+    @StepScope
+    @Bean
+    public JdbcBatchItemWriter<Transaction> workerWriter(@Qualifier("domainDataSource") DataSource dataSource) {
+        return new JdbcBatchItemWriterBuilder<Transaction>()
+                .dataSource(dataSource)
+                .beanMapped()
+                .sql("INSERT INTO TRANSACTION (ACCOUNT, AMOUNT, TIMESTAMP) VALUES (:account, :amount, :timestamp)")
+                .build();
+    }
+
+    @StepScope
+    @Bean
+    public ItemProcessor<Transaction, Transaction> workerProcessor() {
+        return new TransactionItemProcessor();
+    }
 
     @Bean
     public MessageChannel requests() {
@@ -97,17 +105,4 @@ public class WorkerBatchConfiguration {
                 )
                 .get();
     }
-
-    @Bean
-    public Step workerStep() {
-        return workerStepBuilderFactory.get("workerStep")
-                .outputChannel(replies())
-                .inputChannel(requests())
-                .<Transaction, Transaction>chunk(100)
-                .reader(workerReaderCSV(null))
-                .processor(workerProcessor())
-                .writer(workerWriter(null))
-                .build();
-    }
-
 }

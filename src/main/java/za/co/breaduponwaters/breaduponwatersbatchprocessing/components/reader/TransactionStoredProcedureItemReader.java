@@ -8,8 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.jdbc.core.SqlParameter;
-import za.co.breaduponwaters.breaduponwatersbatchprocessing.models.Transaction;
-import za.co.breaduponwaters.breaduponwatersbatchprocessing.repository.TransactionRepository;
+import za.co.breaduponwaters.breaduponwatersbatchprocessing.entity.domain.Transaction;
 
 import javax.sql.DataSource;
 import java.sql.PreparedStatement;

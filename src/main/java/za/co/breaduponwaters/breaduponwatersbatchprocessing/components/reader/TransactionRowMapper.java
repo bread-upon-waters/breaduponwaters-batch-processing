@@ -1,7 +1,7 @@
 package za.co.breaduponwaters.breaduponwatersbatchprocessing.components.reader;
 
 import org.springframework.jdbc.core.RowMapper;
-import za.co.breaduponwaters.breaduponwatersbatchprocessing.models.Transaction;
+import za.co.breaduponwaters.breaduponwatersbatchprocessing.entity.domain.Transaction;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

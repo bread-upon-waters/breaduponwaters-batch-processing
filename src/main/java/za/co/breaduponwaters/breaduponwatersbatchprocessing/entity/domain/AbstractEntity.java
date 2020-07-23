@@ -1,4 +1,4 @@
-package za.co.breaduponwaters.breaduponwatersbatchprocessing.models;
+package za.co.breaduponwaters.breaduponwatersbatchprocessing.entity.domain;
 
 import javax.persistence.*;
 import java.io.Serializable;

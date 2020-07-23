@@ -5,18 +5,11 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.NonTransientResourceException;
 import org.springframework.batch.item.ParseException;
 import org.springframework.batch.item.UnexpectedInputException;
-import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
-import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ResolvableType;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
-import za.co.breaduponwaters.breaduponwatersbatchprocessing.models.Transaction;
+import za.co.breaduponwaters.breaduponwatersbatchprocessing.entity.domain.Transaction;
 
 @StepScope
 @Component
