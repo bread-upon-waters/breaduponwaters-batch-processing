@@ -1,5 +1,10 @@
 package za.co.breaduponwaters.breaduponwatersbatchprocessing.controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.batch.core.*;
 import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
 import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
@@ -16,9 +21,11 @@ import org.springframework.messaging.MessageHandler;
 import org.springframework.messaging.MessagingException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.web.client.HttpClientErrorException;
 
 @RequestMapping("/batch")
 @RestController
+@Tag(name = "batch", description = "The batch processor API")
 public class SpringBatchController {
 
     @Autowired
@@ -34,8 +41,32 @@ public class SpringBatchController {
     @Autowired
     private DirectChannel asyncProcessorReplies;
 
+    @Operation(
+            summary = "Trigger batch jobs by job name",
+            description = "Start the batch job (e.g. multiThreadedStepJob, asyncProcessorStepJob, etc.)",
+            tags = "batch"
+    )
+    @ApiResponses(
+            value = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Request successful",
+                            content = @Content(mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Bad Request",
+                            content = @Content(mediaType = "application/json")
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Job not found",
+                            content = @Content(mediaType = "application/json")
+                    ),
+
+            }
+    )
     @RequestMapping(value = "/", method = RequestMethod.POST)
-    @ResponseStatus(HttpStatus.ACCEPTED)
     public void launch(@RequestParam("jobName") String jobName){
         JobParameters jobParameters = new JobParametersBuilder()
                 .addString("jobName", jobName)
@@ -54,7 +85,7 @@ public class SpringBatchController {
                     .withPayload(jobLaunchRequest)
                     .setReplyChannel(multiThreadReplies).build());
         }
-        if("asyncProcessorStepJob".equalsIgnoreCase(jobName)){
+        else if("asyncProcessorStepJob".equalsIgnoreCase(jobName)){
             JobLaunchRequest jobLaunchRequest = new JobLaunchRequest(asyncProcessorStepJob, jobParameters);
             asyncProcessorReplies.subscribe(new MessageHandler() {
                 @Override
@@ -67,5 +98,18 @@ public class SpringBatchController {
                     .withPayload(jobLaunchRequest)
                     .setReplyChannel(asyncProcessorReplies).build());
         }
+        else{
+            throw new NotFound(jobName);
+        }
     }
+
+
+}
+
+class NotFound extends RuntimeException {
+
+    public NotFound(String message){
+        super(message);
+    }
+
 }

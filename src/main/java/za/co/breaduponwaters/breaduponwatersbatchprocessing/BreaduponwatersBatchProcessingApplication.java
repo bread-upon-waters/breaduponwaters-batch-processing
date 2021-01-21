@@ -1,5 +1,6 @@
 package za.co.breaduponwaters.breaduponwatersbatchprocessing;
 
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.integration.config.annotation.EnableBatchIntegration;
 import org.springframework.boot.SpringApplication;
